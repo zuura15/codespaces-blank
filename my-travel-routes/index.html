@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Travel Routes</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="locations.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([0, 0], 2);
+
+        // Set up the OpenStreetMap layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Function to get color based on frequency
+        function getColor(d) {
+            return d > 10 ? '#800026' :
+                   d > 5  ? '#BD0026' :
+                   d > 2  ? '#E31A1C' :
+                   d > 1  ? '#FC4E2A' :
+                            '#FFEDA0';
+        }
+
+        // Track routes and their frequencies
+        var routeCounts = {};
+        var locationsList = locations.map(location => [location.latitude, location.longitude]);
+
+        for (var i = 0; i < locationsList.length - 1; i++) {
+            var start = locationsList[i];
+            var end = locationsList[i + 1];
+            var key = start.toString() + '|' + end.toString();
+
+            if (routeCounts[key]) {
+                routeCounts[key]++;
+            } else {
+                routeCounts[key] = 1;
+            }
+        }
+
+        // Add markers and polylines to the map
+        locationsList.forEach(function(latlng, i) {
+            L.marker(latlng)
+                .addTo(map)
+                .bindPopup(locations[i].timestamp);
+        });
+
+        for (var key in routeCounts) {
+            var latlngs = key.split('|').map(function(latlng) {
+                return latlng.split(',').map(Number);
+            });
+
+            L.polyline(latlngs, {
+                color: getColor(routeCounts[key]),
+                weight: 4
+            }).addTo(map);
+        }
+
+        // Zoom the map to fit all markers
+        var bounds = L.latLngBounds(locationsList);
+        map.fitBounds(bounds);
+    </script>
+</body>
+</html>
